@@ -1,0 +1,26 @@
+[{
+        "fieldKey": "title",
+        "fieldLabel": "Please provide the title"
+    }, {
+        "fieldKey": "description",
+        "fieldLabel": "Please provide the description"
+    }, {
+        "fieldKey": "requestedBy",
+        "fieldLabel": "Please provide the requested POD"
+    }, {
+        "fieldKey": "sotType",
+        "fieldLabel": "Please provide the sotType"
+    },
+    {
+        "fieldKey": "sotProperties",
+        "fieldLabel": "Please select the required sot variables"
+    }, {
+        "fieldKey": "platform",
+        "fieldLabel": "Please select the platform"
+    }, {
+        "fieldKey": "comments",
+        "fieldLabel": "Please provide the comments"
+    }, {
+        "fieldKey": "attachments",
+        "fieldLabel": "Please provide the attachments"
+    }]
