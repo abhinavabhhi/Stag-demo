@@ -7,7 +7,8 @@ const config = {
       user: DB_USER,
       password: DB_PASSWORD,
       database: DB_DATABASE,
-      connectTimeout: CONNECT_TIMEOUT
+      connectTimeout: CONNECT_TIMEOUT,
+      namedPlaceholders: true
     },
     listPerPage: 10,
     corsOptions: {
