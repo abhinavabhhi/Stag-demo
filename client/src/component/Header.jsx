@@ -1,39 +1,46 @@
-import React from "react"; 
-import AppBar from "@mui/material/AppBar"; 
-import Toolbar from "@mui/material/Toolbar"; 
-import Typography from "@mui/material/Typography"; 
-import Button from "@mui/material/Button"; 
-import IconButton from "@mui/material/IconButton"; 
-import MenuIcon from "@mui/icons-material/Menu"; 
-  
-const Header = () => { 
-  return ( 
-      <AppBar position="static"> 
-        <Toolbar> 
-          {/*Inside the IconButton, we  
-           can render various icons*/} 
-          <IconButton 
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            sx={{ mr: 2 }} 
-          > 
-            {/*This is a simple Menu  
-             Icon wrapped in Icon */} 
-            <MenuIcon /> 
-          </IconButton> 
-          {/* The Typography component applies  
-           default font weights and sizes */} 
-  
-          <Typography variant="h6" 
-            component="div" sx={{ flexGrow: 1 }}> 
-            Stag App Events
-          </Typography> 
-          <Button color="inherit"></Button> 
-        </Toolbar> 
-      </AppBar> 
-  ); 
-}
+import React from "react";
+import { AppBar, Toolbar, Typography, Button } from "@mui/material";
+import { Link } from "react-router-dom";
+import { makeStyles } from "@mui/styles";
+
+const useStyles = makeStyles((theme) => ({
+  appBar: {
+    backgroundColor: theme.palette.primary.main,
+  },
+  title: {
+    flexGrow: 1,
+    textDecoration: "none",
+    color: "white",
+  },
+  link: {
+    color: "white",
+    textDecoration: "none",
+  },
+  button: {
+    boxShadow: "none", // Remove box-shadow
+  },
+}));
+
+const Header = () => {
+  const classes = useStyles();
+
+  return (
+    <AppBar position="static" className={classes.appBar}>
+      <Toolbar>
+        <Typography variant="h6" className={classes.title} component={Link} to="/">
+          Sephora oneTag
+        </Typography>
+        <Button
+          component={Link}
+          to="/"
+          variant="contained"
+          className={`${classes.link} ${classes.button}`}
+        >
+          Home
+        </Button>
+      </Toolbar>
+    </AppBar>
+  );
+};
 
 export default Header;
