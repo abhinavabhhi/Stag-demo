@@ -12,15 +12,23 @@ import {
   Box,
   Tooltip,
 } from "@material-ui/core";
-import {
-  Delete as DeleteIcon,
-  Edit as EditIcon
-} from "@material-ui/icons";
+import { Delete as DeleteIcon, Edit as EditIcon } from "@material-ui/icons";
 import { deleteRequestById } from "../features/apiCalls";
 import EditStagRequest from "./EditStagRequest";
 import ModalContainer from "./ModalContainer";
 import CarouselSlider from "./CarouselSlider";
 
+const columnNames = [
+  "Title",
+  "Description",
+  "Requested By",
+  "SOT Type",
+  "Stag Variables",
+  "Platform",
+  "Comments",
+  "Attachments",
+  "Actions",
+];
 
 const StyledTableCell = ({ children }) => (
   <TableCell>
@@ -30,19 +38,43 @@ const StyledTableCell = ({ children }) => (
   </TableCell>
 );
 
-const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
-  const [order, setOrder] = useState("asc");
-  const [orderBy, setOrderBy] = useState("id");
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [modalContent, setModalContent] = useState(null);
-  const [selectedAttachments, setSelectedAttachments] = useState([]);
-  const [attachmentsModalOpen, setAttachmentsModalOpen] = useState(false);
+const initialModalState = {
+  isOpen: false,
+  content: null,
+  text: "",
+  title: "",
+};
 
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
-    setOrderBy(property);
+const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
+  const TableHeader = () => {
+    return (
+      <>
+        {columnNames.map((columnName, index) => (
+          <StyledTableCell
+            key={index}
+            onClick={() => handleRequestSort(columnName.toLowerCase())}
+          >
+            {columnName}
+          </StyledTableCell>
+        ))}
+      </>
+    );
   };
+  const handleRequestSort = (property) => {
+    const isAsc = state.orderBy === property && state.order === "asc";
+    setState((prevState) => ({
+      ...prevState,
+      order: isAsc ? "desc" : "asc",
+      orderBy: property,
+    }));
+  };
+  const [state, setState] = useState({
+    order: "asc",
+    orderBy: "id",
+    modal: { ...initialModalState },
+    selectedAttachments: [],
+    attachmentsModalOpen: false,
+  });
 
   const handleDelete = (id) => {
     deleteRequestById(id)
@@ -56,14 +88,23 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
       });
   };
 
-  const openModal = (content) => {
-    setModalContent(content);
-    setModalIsOpen(true);
+  const openModal = (text, title) => {
+    setState((prevState) => ({
+      ...prevState,
+      modal: {
+        isOpen: true,
+        content: title,
+        text,
+        title,
+      },
+    }));
   };
 
   const onCloseModal = () => {
-    setModalContent(null);
-    setModalIsOpen(false);
+    setState((prevState) => ({
+      ...prevState,
+      modal: { ...initialModalState },
+    }));
   };
 
   const handleEdit = (id) => {
@@ -77,67 +118,50 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
   };
 
   const handleAttachmentsClick = (attachments) => {
-    setSelectedAttachments(attachments);
-    if(attachments && attachments.length > 0) {
-      setAttachmentsModalOpen(true);
-    }
+    setState((prevState) => ({
+      ...prevState,
+      selectedAttachments: attachments,
+      attachmentsModalOpen: true,
+    }));
+  };
+
+  const truncateText = (text, maxLength) => {
+    return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+  };
+
+  const handleLargeTextClick = (formField, data) => {
+    openModal(data, formField);
   };
 
   const handleSotProperties = (data) => {
     if (data && data.length > 0) {
-      return (
-        <>
-          {JSON.parse(data).map((obj) => (
-            <tr key={obj.tagKey}>
-              <Tooltip title={obj.tagName} arrow>
-                <td>{obj.tagKey}</td>
-              </Tooltip>
-              <td>:</td>
-              <Tooltip title={obj.tagName} arrow>
-                <td>{obj.tagName}</td>
-              </Tooltip>
-            </tr>
-          ))}
-        </>
-      );
+      return JSON.parse(data).map((obj) => (
+        <tr key={obj.tagKey}>
+          <Tooltip title={obj.tagName} arrow>
+            <td>{obj.tagKey}</td>
+          </Tooltip>
+          <td>:</td>
+          <Tooltip title={obj.tagName} arrow>
+            <td>{obj.tagName}</td>
+          </Tooltip>
+        </tr>
+      ));
     } else {
       return (
         <tr key="no-stag-vars">
-          <td colSpan="2">No Stag Variables Available.</td>
+          <td colSpan="3">No Stag Variables Available.</td>
         </tr>
       );
     }
   };
 
-  
-
   return (
-    <Box width="80%" margin="0 auto">
+    <Box width="98%" margin="0 auto">
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <StyledTableCell onClick={() => handleRequestSort("title")}>
-                Title
-              </StyledTableCell>
-              <StyledTableCell onClick={() => handleRequestSort("description")}>
-                Description
-              </StyledTableCell>
-              <StyledTableCell onClick={() => handleRequestSort("requestedBy")}>
-                Requested By
-              </StyledTableCell>
-              <StyledTableCell onClick={() => handleRequestSort("sotType")}>
-                SOT Type
-              </StyledTableCell>
-              <StyledTableCell>Stag Variables</StyledTableCell>
-              <StyledTableCell onClick={() => handleRequestSort("platform")}>
-                Platform
-              </StyledTableCell>
-              <StyledTableCell onClick={() => handleRequestSort("comments")}>
-                Comments
-              </StyledTableCell>
-              <StyledTableCell>Attachments</StyledTableCell>
-              <StyledTableCell>Actions</StyledTableCell>
+              <TableHeader />
             </TableRow>
           </TableHead>
           <TableBody>
@@ -154,36 +178,53 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
                 attachments,
               }) => (
                 <TableRow key={id}>
-                  <Tooltip title={title} arrow>
-                    <TableCell>{title}</TableCell>
-                  </Tooltip>
-                  <Tooltip title={description} arrow>
-                    <TableCell>{description}</TableCell>
-                  </Tooltip>
-                  <Tooltip title={requestedBy} arrow>
-                    <TableCell>{requestedBy}</TableCell>
-                  </Tooltip>
-                  <Tooltip title={sotType} arrow>
-                    <TableCell>{sotType}</TableCell>
-                  </Tooltip>
-                  <TableCell>{handleSotProperties(sotProperties)}</TableCell>
-                  <Tooltip title={platform} arrow>
-                    <TableCell>{platform}</TableCell>
-                  </Tooltip>
-                  <Tooltip title={comments} arrow>
-                    <TableCell>{comments}</TableCell>
-                  </Tooltip>
+                  <TableCell>{title}</TableCell>
                   <TableCell>
-                    <Tooltip title={`${attachments.length} Attachments`} arrow>
-                      <span
-                        style={{ cursor: "pointer", color: "blue" }}
-                        onClick={() => handleAttachmentsClick(attachments)}
-                      >
-                        {attachments.length
-                          ? `${attachments.length} attachments`
-                          : `No Attachments`}
-                      </span>
-                    </Tooltip>
+                    <span
+                      onClick={() =>
+                        handleLargeTextClick("Description", description)
+                      }
+                    >
+                      {truncateText(description, 50)}
+                      {description.length > 50 && (
+                        <span style={{ color: "blue", cursor: "pointer" }}>
+                          {" "}
+                          (Show More)
+                        </span>
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell>{requestedBy}</TableCell>
+                  <TableCell>{sotType}</TableCell>
+                  <TableCell>
+                    {" "}
+                    <table>
+                      <tbody>{handleSotProperties(sotProperties)}</tbody>
+                    </table>
+                  </TableCell>
+                  <TableCell>{platform}</TableCell>
+                  <TableCell>
+                    <span
+                      onClick={() => handleLargeTextClick("Comments", comments)}
+                    >
+                      {truncateText(comments, 50)}
+                      {comments.length > 50 && (
+                        <span style={{ color: "blue", cursor: "pointer" }}>
+                          {" "}
+                          (Show More)
+                        </span>
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      style={{ cursor: "pointer", color: "blue" }}
+                      onClick={() => handleAttachmentsClick(attachments)}
+                    >
+                      {attachments.length
+                        ? `${attachments.length} attachments`
+                        : `No Attachments`}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div style={{ display: "flex", gap: "8px" }}>
@@ -209,21 +250,41 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
           </TableBody>
         </Table>
       </TableContainer>
-      <ModalContainer isOpen={modalIsOpen} onClose={onCloseModal}>
-        {modalContent}
+      <ModalContainer
+        isOpen={state.modal.isOpen}
+        onClose={onCloseModal}
+        title={state.modal.title}
+      >
+        <div
+          style={{
+            padding:
+              state.modal.title === "Description" ||
+              state.modal.title === "Comments"
+                ? "16px"
+                : "0",
+          }}
+        >
+          <strong>{state.modal.content}</strong>
+          <p style={{ margin: "0" }}>{state.modal.text}</p>
+        </div>
       </ModalContainer>
       <ModalContainer
-        isOpen={attachmentsModalOpen}
-        onClose={() => setAttachmentsModalOpen(false)}
+        isOpen={state.attachmentsModalOpen}
+        onClose={() =>
+          setState((prevState) => ({
+            ...prevState,
+            attachmentsModalOpen: false,
+          }))
+        }
       >
-        {selectedAttachments.length === 1 ? (
+        {state?.selectedAttachments?.length === 1 ? (
           <img
-            src={selectedAttachments[0].src}
+            src={state.selectedAttachments[0].src}
             alt="Attachment"
             style={{ width: "100%", marginBottom: "16px" }}
           />
         ) : (
-          <CarouselSlider attachments={selectedAttachments}/>
+          <CarouselSlider attachments={state.selectedAttachments} />
         )}
       </ModalContainer>
     </Box>

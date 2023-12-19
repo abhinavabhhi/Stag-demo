@@ -4,7 +4,7 @@ import {
   } from "@material-ui/icons";
   import Slider from "react-slick";
 
-const CarouselSlider = ({attachments}) => {
+const CarouselSlider = ({attachments, selectedIndex=0}) => {
     const settings = {
       dots: true,
       infinite: true,
@@ -14,7 +14,7 @@ const CarouselSlider = ({attachments}) => {
     };
 
     return (
-      <Slider {...settings}>
+      <Slider {...settings} initialSlide={selectedIndex}>
         {attachments.map((attachment, index) => (
           <div key={index} style={{ textAlign: "center" }}>
             {attachment.type.startsWith("image/") ? (
@@ -29,7 +29,7 @@ const CarouselSlider = ({attachments}) => {
                   textAlign: "center",
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "center", // Center contents vertically
+                  alignItems: "center",
                 }}
               >
                 <FileIcon fontSize="large" />

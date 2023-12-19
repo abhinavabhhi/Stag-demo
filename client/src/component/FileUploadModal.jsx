@@ -115,6 +115,7 @@ const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
       onRequestClose={closeModal}
       contentLabel="File Upload Modal"
       style={modalStyles}
+      disableBackdropClick
     >
       <CloseIcon style={closeButtonStyles} onClick={closeModal} />
       <h2>File Upload</h2>

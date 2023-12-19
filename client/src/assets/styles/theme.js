@@ -20,6 +20,13 @@ const theme = createTheme({
       },
       // Add other customizations to the palette if needed
     },
+    typography: {
+      h6:{
+        fontFamily: 'Raleway, Arial',
+        fontSize: '16px',
+        fontWeight: "bold"
+      }
+    },
   });
 
   export default theme;

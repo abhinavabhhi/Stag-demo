@@ -1,12 +1,12 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@mui/material/styles";
+import Header from "./component/Header";
+import WrapperContainer from "./component/WrapperContainer";
+import theme from "./assets/styles/theme";
 import "./styles/modal.css";
 import "./styles/loadingSpinner.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import theme from "./assets/styles/theme";
-import Header from "./component/Header";
-import WrapperContainer from "./component/WrapperContainer";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@mui/material/styles";
 
 function App() {
   return (
