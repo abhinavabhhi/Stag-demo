@@ -6,13 +6,16 @@ import Grid from "@mui/material/Grid";
 import MenuItem from "@mui/material/MenuItem";
 import Autocomplete from "@mui/material/Autocomplete";
 import CheckIcon from "@mui/icons-material/Check";
-import { useNavigate, useParams } from "react-router-dom";
 import tagData from "./data/sotProps.json";
 import fieldNames from "./data/requestFormFields.json";
 import { getStagRequestById, updateStagRequest } from "../features/apiCalls";
 import { makeStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
 import Typography from "@material-ui/core/Typography";
+import { CardContent } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
+import DeleteIcon from "@mui/icons-material/Delete";
+
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -24,64 +27,78 @@ const useStyles = makeStyles((theme) => ({
   },
   card: {
     padding: theme.spacing(3),
-    width: "75%",
   },
+  fileGridItemStyles: {
+    backgroundColor: "#f0f0f0",
+    padding: "10px",
+    borderRadius: "4px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "10px",
+    width: "auto",
+  },
+  inputLabelNoShrink: {
+    transform: "translate(32px, 24px) scale(1)"
+  }
 }));
 
-const EditStagRequest = () => {
+const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
   const classes = useStyles();
-  const { id } = useParams();
-  const navigate = useNavigate();
   const { control, handleSubmit, register, setValue } = useForm();
   const [selectedOptions, setSelectedOptions] = useState({
     sotProperties: [],
     platform: [],
   });
-
-  const fetchData = async (id) => {
-    try {
-      const { data } = await getStagRequestById(id);
-
-      const firstElement = data?.[0] || {};
-
-      for (const [fieldKey, fieldValue] of Object.entries(firstElement)) {
-        setValue(fieldKey, fieldValue);
-      }
-
-      const sotProperties = firstElement?.sotProperties || [];
-      const platformArray = firstElement?.platform
-        ? firstElement?.platform.split(",").map((item) => item.trim())
-        : [];
-
-      setSelectedOptions({
-        sotProperties: JSON.parse(sotProperties),
-        platform: platformArray,
-      });
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
+  const [files, setFiles] = useState([]);
 
   useEffect(() => {
-    fetchData(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    const setValuesAsync = async () => {
+      try {
+        const { data } = await getStagRequestById(id);
+        const firstElement = data || {};
+        for (const [fieldKey, fieldValue] of Object.entries(firstElement)) {
+          await setValue(fieldKey, fieldValue);
+        }
+        const sotProperties = firstElement?.sotProperties || [];
+        const platformArray = firstElement?.platform
+          ? firstElement?.platform.split(",").map((item) => item.trim())
+          : [];
+        if (firstElement.attachments && firstElement.attachments.length > 0) {
+          setFiles([...firstElement.attachments]);
+        }
+        setSelectedOptions({
+          sotProperties: JSON.parse(sotProperties),
+          platform: platformArray,
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    setValuesAsync();
+  }, [id, setValue]);
 
   const handleAutocompleteChange = (fieldKey, selectedValues) => {
-    setSelectedOptions((prevOptions) => ({ ...prevOptions, [fieldKey]: selectedValues }));
+    setSelectedOptions((prevOptions) => ({
+      ...prevOptions,
+      [fieldKey]: selectedValues,
+    }));
   };
-
   const onSubmit = async (data) => {
-    const sotVariables = selectedOptions.sotProperties.reduce((acc, obj, index) => {
-      index = index + 1;
-      acc[`sotVar${index}`] = `${obj.tagName} \n (${obj.tagKey})`;
-      return acc;
-    }, {});
-
-    const sotPropertiesString = JSON.stringify(selectedOptions.sotProperties || []);
+    const sotVariables = selectedOptions.sotProperties.reduce(
+      (acc, obj, index) => {
+        index = index + 1;
+        acc[`sotVar${index}`] = `${obj.tagName} \n (${obj.tagKey})`;
+        return acc;
+      },
+      {}
+    );
+    const sotPropertiesString = JSON.stringify(
+      selectedOptions.sotProperties || []
+    );
     const platFormString = selectedOptions.platform.join(",") || "";
-    const attachments = JSON.stringify(data.attachments || {});
-
+    const attachments = files || [];
     const updatedFormData = {
       ...data,
       ...sotVariables,
@@ -90,14 +107,20 @@ const EditStagRequest = () => {
       requestId: data.requestId,
       attachments: attachments,
     };
-
     try {
       await updateStagRequest(updatedFormData);
-      navigate("/"); // Redirect to the desired page upon successful submission
+      onDataRefresh();
+      onClose();
+      setFiles([]);
     } catch (error) {
       console.error("Error updating request:", error);
-      // Handle the error, e.g., show a user-friendly message
     }
+  };
+
+  const removeFile = (index) => {
+    const updatedFiles = [...files];
+    updatedFiles.splice(index, 1);
+    setFiles(updatedFiles);
   };
 
   return (
@@ -107,65 +130,131 @@ const EditStagRequest = () => {
           Edit Stag Request Form:
         </Typography>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <Grid container spacing={2}>
-            {fieldNames.map(({ fieldKey, fieldLabel, fieldType }) =>
-              fieldType === "TextField" ? (
-                <Grid item xs={12} md={6} key={`${fieldKey}-textField`}>
-                  <Controller
-                    name={fieldKey}
-                    control={control}
-                    render={({ field }) => (
-                      <TextField {...field} label={fieldLabel} variant="outlined" fullWidth {...register(fieldKey)} />
-                    )}
-                  />
+          <CardContent>
+            <Grid container spacing={2}>
+              {fieldNames.map(({ fieldKey, fieldLabel, fieldType }) =>
+                fieldType === "TextField" ? (
+                  <Grid item xs={12} md={6} key={`${fieldKey}-textField`}>
+                    <Controller
+                      name={fieldKey}
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label={fieldLabel}
+                          variant="outlined"
+                          fullWidth
+                          {...register(fieldKey)}
+                          InputLabelProps={{
+                            shrink: true,
+                            className: classes.inputLabelNoShrink
+                          }}
+                        />
+                      )}
+                    />
+                  </Grid>
+                ) : null
+              )}
+
+              <Grid item md={6} xs={12}>
+                <Autocomplete
+                  multiple
+                  options={["iOS", "Android", "Desktop"]}
+                  getOptionLabel={(option) => option}
+                  isOptionEqualToValue={(option, value) => option === value}
+                  disableCloseOnSelect
+                  value={selectedOptions.platform || []}
+                  onChange={(_, newValue) =>
+                    handleAutocompleteChange("platform", newValue)
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      label="Select Platform"
+                      fullWidth
+                    />
+                  )}
+                  renderOption={(props, option, { selected }) => (
+                    <MenuItem
+                      {...props}
+                      key={option}
+                      value={option}
+                      sx={{ justifyContent: "space-between" }}
+                    >
+                      {option}
+                      {selected ? <CheckIcon color="info" /> : null}
+                    </MenuItem>
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Autocomplete
+                  multiple
+                  options={tagData}
+                  getOptionLabel={(option) => option.tagName}
+                  isOptionEqualToValue={(option, value) =>
+                    option.tagName === value.tagName
+                  }
+                  disableCloseOnSelect
+                  value={selectedOptions.sotProperties || []}
+                  onChange={(_, newValue) =>
+                    handleAutocompleteChange("sotProperties", newValue)
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      label="Select SOT Variables"
+                      fullWidth
+                    />
+                  )}
+                  renderOption={(props, option, { selected }) => (
+                    <MenuItem
+                      {...props}
+                      key={option.tagKey}
+                      value={option.tagName}
+                      sx={{ justifyContent: "space-between" }}
+                    >
+                      {option.tagName}
+                      {selected ? <CheckIcon color="info" /> : null}
+                    </MenuItem>
+                  )}
+                />
+              </Grid>
+
+              {files.length > 0 && (
+                <Grid item xs={12} md={12}>
+                  <h3 style={{ marginTop: "20px" }}>Selected Files</h3>
+                  <div
+                    style={{
+                      maxHeight: "200px", // Set the maximum height you desire
+                      overflowY: "auto", // Enable vertical scrollbar
+                    }}
+                  >
+                    {files.map((file, index) => (
+                      <div
+                        key={file.name}
+                        className={classes.fileGridItemStyles}
+                      >
+                        <span>{file.name}</span>
+                        <IconButton onClick={() => removeFile(index)}>
+                          <DeleteIcon color="error" />
+                        </IconButton>
+                      </div>
+                    ))}
+                  </div>
                 </Grid>
-              ) : null
-            )}
+              )}
 
-            <Grid item md={6} xs={12}>
-              <Autocomplete
-                multiple
-                options={["iOS", "Android", "Desktop"]}
-                getOptionLabel={(option) => option}
-                isOptionEqualToValue={(option, value) => option === value}
-                disableCloseOnSelect
-                value={selectedOptions.platform || []}
-                onChange={(_, newValue) => handleAutocompleteChange("platform", newValue)}
-                renderInput={(params) => <TextField {...params} variant="outlined" label="Select Platform" fullWidth />}
-                renderOption={(props, option, { selected }) => (
-                  <MenuItem {...props} key={option} value={option} sx={{ justifyContent: "space-between" }}>
-                    {option}
-                    {selected ? <CheckIcon color="info" /> : null}
-                  </MenuItem>
-                )}
-              />
+              <Grid item xs={12}>
+                <Button variant="contained" type="submit" color="primary">
+                  Update Request
+                </Button>
+              </Grid>
             </Grid>
-
-            <Grid item xs={12}>
-              <Autocomplete
-                multiple
-                options={tagData}
-                getOptionLabel={(option) => option.tagName}
-                isOptionEqualToValue={(option, value) => option.tagName === value.tagName}
-                disableCloseOnSelect
-                value={selectedOptions.sotProperties || []}
-                onChange={(_, newValue) => handleAutocompleteChange("sotProperties", newValue)}
-                renderInput={(params) => <TextField {...params} variant="outlined" label="Select SOT Variables" fullWidth />}
-                renderOption={(props, option, { selected }) => (
-                  <MenuItem {...props} key={option.tagKey} value={option.tagName} sx={{ justifyContent: "space-between" }}>
-                    {option.tagName}
-                    {selected ? <CheckIcon color="info" /> : null}
-                  </MenuItem>
-                )}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Button variant="contained" type="submit" color="primary">
-                Update Request
-              </Button>
-            </Grid>
-          </Grid>
+          </CardContent>
         </form>
       </Card>
     </div>

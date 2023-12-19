@@ -12,9 +12,15 @@ import {
   Box,
   Tooltip,
 } from "@material-ui/core";
-import { Delete as DeleteIcon, Edit as EditIcon } from "@material-ui/icons";
+import {
+  Delete as DeleteIcon,
+  Edit as EditIcon
+} from "@material-ui/icons";
 import { deleteRequestById } from "../features/apiCalls";
-import { useNavigate } from "react-router-dom";
+import EditStagRequest from "./EditStagRequest";
+import ModalContainer from "./ModalContainer";
+import CarouselSlider from "./CarouselSlider";
+
 
 const StyledTableCell = ({ children }) => (
   <TableCell>
@@ -24,10 +30,13 @@ const StyledTableCell = ({ children }) => (
   </TableCell>
 );
 
-const EnhancedTable = ({ data, onDelete }) => {
+const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("id");
-  const navigate = useNavigate();
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalContent, setModalContent] = useState(null);
+  const [selectedAttachments, setSelectedAttachments] = useState([]);
+  const [attachmentsModalOpen, setAttachmentsModalOpen] = useState(false);
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -39,7 +48,6 @@ const EnhancedTable = ({ data, onDelete }) => {
     deleteRequestById(id)
       .then((response) => {
         if (response?.success) {
-          console.log("Deleted request with ID:", id, response);
           onDelete(response.success, id);
         }
       })
@@ -48,14 +56,37 @@ const EnhancedTable = ({ data, onDelete }) => {
       });
   };
 
+  const openModal = (content) => {
+    setModalContent(content);
+    setModalIsOpen(true);
+  };
+
+  const onCloseModal = () => {
+    setModalContent(null);
+    setModalIsOpen(false);
+  };
+
   const handleEdit = (id) => {
-    navigate(`/update/${id}`);
+    openModal(
+      <EditStagRequest
+        id={id}
+        onClose={onCloseModal}
+        onDataRefresh={onDataRefresh}
+      />
+    );
+  };
+
+  const handleAttachmentsClick = (attachments) => {
+    setSelectedAttachments(attachments);
+    if(attachments && attachments.length > 0) {
+      setAttachmentsModalOpen(true);
+    }
   };
 
   const handleSotProperties = (data) => {
     if (data && data.length > 0) {
       return (
-        <React.Fragment>
+        <>
           {JSON.parse(data).map((obj) => (
             <tr key={obj.tagKey}>
               <Tooltip title={obj.tagName} arrow>
@@ -67,7 +98,7 @@ const EnhancedTable = ({ data, onDelete }) => {
               </Tooltip>
             </tr>
           ))}
-        </React.Fragment>
+        </>
       );
     } else {
       return (
@@ -77,6 +108,8 @@ const EnhancedTable = ({ data, onDelete }) => {
       );
     }
   };
+
+  
 
   return (
     <Box width="80%" margin="0 auto">
@@ -108,43 +141,91 @@ const EnhancedTable = ({ data, onDelete }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map(({ id, title, description, requestedBy, sotType, sotProperties, platform, comments }) => (
-              <TableRow key={id}>
-                <Tooltip title={title} arrow>
-                  <TableCell>{title}</TableCell>
-                </Tooltip>
-                <Tooltip title={description} arrow>
-                  <TableCell>{description}</TableCell>
-                </Tooltip>
-                <Tooltip title={requestedBy} arrow>
-                  <TableCell>{requestedBy}</TableCell>
-                </Tooltip>
-                <Tooltip title={sotType} arrow>
-                  <TableCell>{sotType}</TableCell>
-                </Tooltip>
-                <TableCell>{handleSotProperties(sotProperties)}</TableCell>
-                <Tooltip title={platform} arrow>
-                  <TableCell>{platform}</TableCell>
-                </Tooltip>
-                <Tooltip title={comments} arrow>
-                  <TableCell>{comments}</TableCell>
-                </Tooltip>
-                <TableCell>attachments</TableCell>
-                <TableCell>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <IconButton color="secondary" aria-label="edit" onClick={() => handleEdit(id)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton color="secondary" aria-label="delete" onClick={() => handleDelete(id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {data.map(
+              ({
+                id,
+                title,
+                description,
+                requestedBy,
+                sotType,
+                sotProperties,
+                platform,
+                comments,
+                attachments,
+              }) => (
+                <TableRow key={id}>
+                  <Tooltip title={title} arrow>
+                    <TableCell>{title}</TableCell>
+                  </Tooltip>
+                  <Tooltip title={description} arrow>
+                    <TableCell>{description}</TableCell>
+                  </Tooltip>
+                  <Tooltip title={requestedBy} arrow>
+                    <TableCell>{requestedBy}</TableCell>
+                  </Tooltip>
+                  <Tooltip title={sotType} arrow>
+                    <TableCell>{sotType}</TableCell>
+                  </Tooltip>
+                  <TableCell>{handleSotProperties(sotProperties)}</TableCell>
+                  <Tooltip title={platform} arrow>
+                    <TableCell>{platform}</TableCell>
+                  </Tooltip>
+                  <Tooltip title={comments} arrow>
+                    <TableCell>{comments}</TableCell>
+                  </Tooltip>
+                  <TableCell>
+                    <Tooltip title={`${attachments.length} Attachments`} arrow>
+                      <span
+                        style={{ cursor: "pointer", color: "blue" }}
+                        onClick={() => handleAttachmentsClick(attachments)}
+                      >
+                        {attachments.length
+                          ? `${attachments.length} attachments`
+                          : `No Attachments`}
+                      </span>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <IconButton
+                        color="secondary"
+                        aria-label="edit"
+                        onClick={() => handleEdit(id)}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        color="secondary"
+                        aria-label="delete"
+                        onClick={() => handleDelete(id)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            )}
           </TableBody>
         </Table>
       </TableContainer>
+      <ModalContainer isOpen={modalIsOpen} onClose={onCloseModal}>
+        {modalContent}
+      </ModalContainer>
+      <ModalContainer
+        isOpen={attachmentsModalOpen}
+        onClose={() => setAttachmentsModalOpen(false)}
+      >
+        {selectedAttachments.length === 1 ? (
+          <img
+            src={selectedAttachments[0].src}
+            alt="Attachment"
+            style={{ width: "100%", marginBottom: "16px" }}
+          />
+        ) : (
+          <CarouselSlider attachments={selectedAttachments}/>
+        )}
+      </ModalContainer>
     </Box>
   );
 };

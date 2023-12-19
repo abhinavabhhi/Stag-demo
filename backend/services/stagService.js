@@ -53,18 +53,20 @@ exports.updateStagRequest = async (newObject) => {
   }
 };
 
-exports.getAllAttachments = async () => {
+exports.deleteStagRequest = async (id) => {
   try {
-    return await stagModel.getAllAttachments();
-  } catch (error) {
-    handleError('getAllAttachments', error);
-  }
-};
-
-exports.deleteStagRequest = async (req) => {
-  try {
-    return await stagModel.deleteStagRequest(req);
+    return await stagModel.deleteStagRequest(id);
   } catch (error) {
     handleError('deleteStagRequest', error);
   }
 };
+
+exports.getStagRequestById = async (id) => {
+  try {
+    const result = await stagModel.getStagRequestById(id);
+    return result;
+  } catch (error) {
+    handleError('getStagRequestById', error);
+  }
+};
+

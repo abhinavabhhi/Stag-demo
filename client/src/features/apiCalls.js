@@ -2,11 +2,6 @@ import axios from "axios";
 
 const baseURL = "http://localhost:8800/api/stagRequest";
 
-const handleAxiosError = (error) => {
-  console.error("Axios error:", error);
-  return { error };
-};
-
 const createStagRequest = async (request) => {
   try {
     const res = await axios.post(`${baseURL}/create`, request);
@@ -25,14 +20,6 @@ const deleteRequestById = async (id) => {
   }
 };
 
-const uploadAttachments = async (request) => {
-  try {
-    const res = await axios.post("http://localhost:8800/uploads", request);
-    return res.data;
-  } catch (err) {
-    return handleAxiosError(err);
-  }
-};
 
 const getAllStagRequests = async () => {
   try {
@@ -45,20 +32,16 @@ const getAllStagRequests = async () => {
 
 const getStagRequestById = async (id) => {
   try {
-    const res = await axios.get(`${baseURL}/${id}`);
+    const res = await axios.get(`${baseURL}/view/${id}`);
     return res.data;
   } catch (err) {
     return handleAxiosError(err);
   }
 };
 
-const getUploadedAttachments = async () => {
-  try {
-    const res = await axios.get(`${baseURL}/getAttachments`);
-    return res.data;
-  } catch (err) {
-    return handleAxiosError(err);
-  }
+const handleAxiosError = (error) => {
+  console.error("Axios error:", error);
+  return { error };
 };
 
 const updateStagRequest = async (requestData) => {
@@ -73,9 +56,7 @@ const updateStagRequest = async (requestData) => {
 export {
   createStagRequest,
   deleteRequestById,
-  uploadAttachments,
   getAllStagRequests,
   getStagRequestById,
-  getUploadedAttachments,
   updateStagRequest,
 };

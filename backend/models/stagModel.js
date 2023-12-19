@@ -1,6 +1,6 @@
 const db = require('./db');
 const dbQueries = require('../config/dbQueries');
-const { SELECT_ALL_STAG_REQUESTS, INSERT_STAG_REQUEST, UPDATE_STAG_REQUEST, UPLOAD_ATTACHMENTS, GET_UPLOADED_ATTACHMENTS, DELETE_STAG_REQUEST } = dbQueries;
+const { SELECT_ALL_STAG_REQUESTS, INSERT_STAG_REQUEST, UPDATE_STAG_REQUEST, GET_STAG_REQUEST_BY_ID, DELETE_STAG_REQUEST } = dbQueries;
 
 // Model function to get all stag requests from the database
 exports.getAllStagRequests = async () => {
@@ -35,38 +35,24 @@ exports.updateStagRequest = async (values, id) => {
   }
 };
 
-// Model function to upload attachments into the database
-exports.uploadAttachments = async (values) => {
-  try {
-    const promises = values.map(item => db.execute(UPLOAD_ATTACHMENTS, item));
-    await Promise.all(promises);
-    console.log('Files inserted into MySQL');
-    return { success: true };
-  } catch (error) {
-    console.error('Error uploading attachments to MySQL:', error);
-    throw error;
-  }
-};
-
-// Model function to get all attachments from the database
-exports.getAllAttachments = async () => {
-  try {
-    const [rows] = await db.execute(GET_UPLOADED_ATTACHMENTS);
-    return rows;
-  } catch (error) {
-    console.error('Error in getAllAttachments model:', error);
-    throw error;
-  }
-};
-
 // Model function to delete a stag request from the database
-exports.deleteStagRequest = async (req) => {
+exports.deleteStagRequest = async (id) => {
   try {
-    const query = `${DELETE_STAG_REQUEST}${req}`;
-    const [result] = await db.query(query);
+    const [result] = await db.execute(DELETE_STAG_REQUEST, [id]);
     return result;
   } catch (error) {
     console.error('Error in deleteStagRequest model:', error);
+    throw error;
+  }
+};
+
+
+exports.getStagRequestById = async(id) => {
+  try {
+    const [result] = await db.query(GET_STAG_REQUEST_BY_ID, [id]);
+    return result;
+  } catch(error) {
+    console.error('Error in getStagRequestById model:', error);
     throw error;
   }
 };

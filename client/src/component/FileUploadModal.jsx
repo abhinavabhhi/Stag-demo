@@ -1,16 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Dropzone from "react-dropzone";
 import Modal from "react-modal";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-// import { uploadAttachments } from "../features/apiCalls";
+import CloseIcon from "@mui/icons-material/Close";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
 
 Modal.setAppElement("#root"); // Set the root element for accessibility
 
 const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
   const [files, setFiles] = useState([]);
+  const [fileSizeError, setFileSizeError] = useState(false);
+
   const dropzoneStyles = {
     width: "100%",
     height: "100px",
@@ -22,10 +26,11 @@ const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
     cursor: "pointer",
     outline: "none",
   };
+
   const modalStyles = {
     overlay: {
       backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay
-      zIndex: 1000, // Z-index for the overlay
+      zIndex: 99999, // Z-index for the overlay
     },
     content: {
       top: "50%",
@@ -44,6 +49,13 @@ const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
     },
   };
 
+  const closeButtonStyles = {
+    position: "absolute",
+    top: "8px",
+    right: "8px",
+    cursor: "pointer",
+  };
+
   const fileGridItemStyles = {
     backgroundColor: "#f0f0f0",
     padding: "10px",
@@ -55,10 +67,26 @@ const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
     width: "auto",
   };
 
-  const handleDrop = (acceptedFiles) => {
-    setFiles([...files, ...acceptedFiles]);
-    onDrop([...files, ...acceptedFiles]); // Pass the files to the parent component if needed
-  };
+  const handleDrop = useCallback((acceptedFiles) => {
+    acceptedFiles.forEach((file) => {
+      if(file.size <= 5 * 1024 * 1024) {
+        setFileSizeError(false);
+        const reader = new FileReader();
+  
+        reader.onload = function (e) {
+          setFiles((prevFiles) => [
+            ...prevFiles,
+            { name: file.name, type: file.type, src: e.target.result },
+          ]);
+        };
+  
+        reader.readAsDataURL(file);
+
+      } else {
+        setFileSizeError(true);
+      }
+    });
+  }, []);
 
   const removeFile = (index) => {
     const updatedFiles = [...files];
@@ -71,29 +99,14 @@ const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
     e.preventDefault();
     setFiles([]); // Clear files when the modal is closed
     onRequestClose();
-    // if (files) {
-    //   try {
-    //     //console.log('Uploading Image:', image);
-    //     const formData = new FormData();
-    //     formData.append("attachments", files);
-    //     console.log("FormData:", formData);
-    //     const response = await uploadAttachments(formData);
-    //     console.log("Upload Response:", response);
+  };
 
-    //     if (response.status === 200) {
-    //       console.log("Image uploaded successfully");
-    //       //   fetchImages();
-    //       setFiles([]); // Clear files when the modal is closed
-    //       onRequestClose();
-    //     } else {
-    //       console.error("Error uploading image:", response.statusText);
-    //     }
-    //   } catch (error) {
-    //     console.error("Error uploading image:", error.message);
-    //   }
-    // } else {
-    //   console.warn("No image selected for upload");
-    // }
+  const uploadFiles = () => {
+    if (files && files.length > 0) {
+      onDrop(files);
+      setFiles([]); // Clear files when the modal is closed
+      onRequestClose();
+    }
   };
 
   return (
@@ -103,37 +116,53 @@ const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
       contentLabel="File Upload Modal"
       style={modalStyles}
     >
+      <CloseIcon style={closeButtonStyles} onClick={closeModal} />
       <h2>File Upload</h2>
-      <Dropzone onDrop={handleDrop}>
+      <Dropzone onDrop={handleDrop} maxFiles={5}>
         {({ getRootProps, getInputProps }) => (
           <form method="POST" encType="multipart/form-data">
             <div {...getRootProps()} style={dropzoneStyles}>
               <input {...getInputProps()} />
               <CloudUploadIcon
-                style={{ padding: "5px", fontSize: 50, color: "#009688" }}
+                style={{ padding: "5px", fontSize: 50, color: "#27272a" }}
               />
               <p>Drag 'n' drop some files here, or click to select files</p>
             </div>
           </form>
         )}
       </Dropzone>
-      {files && files.length > 0 && (
-        <>
-          <h3 style={{ marginTop: "20px" }}>Selected Files</h3>
-          <div>
-            {files.map((file, index) => (
-              <div key={file.name} style={fileGridItemStyles}>
-                <span>{file.name}</span>
-                <IconButton onClick={() => removeFile(index)}>
-                  <DeleteIcon color="error" />
-                </IconButton>
-              </div>
-            ))}
-          </div>
-        </>
+      {fileSizeError && (
+        <Typography variant="body2" color="error" style={{ marginTop: "8px" }}>
+          File size exceeds 5 MB limit
+        </Typography>
       )}
-      <Button style={{ marginTop: "20px" }} variant="contained" color="primary" onClick={closeModal}>
-        Close
+      {files.length > 0 && (
+        <Grid item xs={12} md={12}>
+          <h3 style={{ marginTop: "20px" }}>Selected Files</h3>
+          <div
+            style={{
+              maxHeight: "200px", // Set the maximum height you desire
+              overflowY: "auto", // Enable vertical scrollbar
+            }}
+          >
+              {files.map((file, index) => (
+                <div key={file.name} style={fileGridItemStyles}>
+                  <span>{file.name}</span>
+                  <IconButton onClick={() => removeFile(index)}>
+                    <DeleteIcon color="error" />
+                  </IconButton>
+                </div>
+              ))}
+          </div>
+        </Grid>
+      )}
+      <Button
+        style={{ marginTop: "20px" }}
+        variant="contained"
+        color="primary"
+        onClick={uploadFiles}
+      >
+        Upload
       </Button>
     </Modal>
   );

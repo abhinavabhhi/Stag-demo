@@ -6,7 +6,6 @@ import Grid from "@mui/material/Grid";
 import MenuItem from "@mui/material/MenuItem";
 import Autocomplete from "@mui/material/Autocomplete";
 import CheckIcon from "@mui/icons-material/Check";
-import { useNavigate } from "react-router-dom";
 import tagData from "./data/sotProps.json";
 import fieldNames from "./data/requestFormFields.json";
 import { createStagRequest } from "../features/apiCalls";
@@ -17,8 +16,10 @@ import CardContent from "@material-ui/core/CardContent";
 import { Controller, useForm } from "react-hook-form";
 import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
-import Link from '@mui/material/Link';
-import { v4 as uuidv4 } from 'uuid';
+import Link from "@mui/material/Link";
+import { v4 as uuidv4 } from "uuid";
+import IconButton from "@mui/material/IconButton";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -30,14 +31,22 @@ const useStyles = makeStyles((theme) => ({
   },
   card: {
     padding: theme.spacing(3),
-    width: "75%",
+  },
+  fileGridItemStyles: {
+    backgroundColor: "#f0f0f0",
+    padding: "10px",
+    borderRadius: "4px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "10px",
+    width: "auto",
   },
 }));
 
-const AddStagRequest = () => {
+const AddStagRequest = ({ onClose, onDataRefresh }) => {
   const classes = useStyles();
   const { control, handleSubmit, register } = useForm();
-  const navigate = useNavigate();
   const [formData, setFormData] = useState(
     fieldNames.reduce((acc, { fieldKey }) => ({ ...acc, [fieldKey]: "" }), {})
   );
@@ -45,7 +54,7 @@ const AddStagRequest = () => {
     sotProperties: [],
     platform: [],
   });
-  const [image, setImage] = useState([]);
+  const [files, setFiles] = useState([]);
   const [modalIsOpen, setModalIsOpen] = useState(false);
 
   const openModal = () => {
@@ -58,17 +67,10 @@ const AddStagRequest = () => {
 
   const handleDrop = (acceptedFiles) => {
     if (acceptedFiles && acceptedFiles.length > 0) {
-      setImage(acceptedFiles);
+      setFiles(acceptedFiles);
     }
   };
-
-  const handleFileChange = (e) => {
-    const selectedImage = e.target.files[0];
-    if (selectedImage) {
-      // setImage(selectedImage);
-    }
-  };
-
+  
   const handleAutocompleteChange = (fieldKey, selectedValues) => {
     setSelectedOptions((prevOptions) => ({
       ...prevOptions,
@@ -92,17 +94,18 @@ const AddStagRequest = () => {
       ...sotVariables,
       ...data,
       platform: data.platform.join(","),
-      attachments: image,
-      requestId: uuidv4()
+      attachments: files,
+      requestId: uuidv4(),
     };
-
     setFormData(updatedFormData);
 
     try {
       const isFormValid = validateForm(updatedFormData);
       if (isFormValid) {
         await createStagRequest(updatedFormData);
-        navigate("/"); // Redirect to the desired page upon successful submission
+        onClose();
+        onDataRefresh();
+        //navigate("/"); // Redirect to the desired page upon successful submission
       }
     } catch (error) {
       handleAxiosError(error);
@@ -113,8 +116,13 @@ const AddStagRequest = () => {
     for (const fieldKey in formData) {
       if (formData.hasOwnProperty(fieldKey)) {
         const value = formData[fieldKey];
-        const required = fieldNames.find((field) => field.fieldKey === fieldKey)?.required;
-        if (required && (!value || (typeof value === "string" && !value.trim()))) {
+        const required = fieldNames.find(
+          (field) => field.fieldKey === fieldKey
+        )?.required;
+        if (
+          required &&
+          (!value || (typeof value === "string" && !value.trim()))
+        ) {
           return false;
         }
         if (fieldKey === "platform" && required) {
@@ -130,7 +138,11 @@ const AddStagRequest = () => {
   const handleAxiosError = (error) => {
     if (axios.isAxiosError(error)) {
       if (error.response) {
-        console.error("Server responded with:", error.response.status, error.response.data);
+        console.error(
+          "Server responded with:",
+          error.response.status,
+          error.response.data
+        );
       } else if (error.request) {
         console.error("No response received:", error.request);
       } else {
@@ -139,6 +151,12 @@ const AddStagRequest = () => {
     } else {
       console.error("Non-Axios error occurred:", error.message);
     }
+  };
+
+  const removeFile = (index) => {
+    const updatedFiles = [...files];
+    updatedFiles.splice(index, 1);
+    setFiles(updatedFiles);
   };
 
   return (
@@ -153,15 +171,23 @@ const AddStagRequest = () => {
               {fieldNames.map(({ fieldKey, fieldLabel, required }) => (
                 <React.Fragment key={fieldKey}>
                   {fieldKey.startsWith("sotProperties") ? (
-                    <Grid item xs={12} key={`${fieldKey}-autoComplete-sotProps`}>
+                    <Grid
+                      item
+                      xs={12}
+                      key={`${fieldKey}-autoComplete-sotProps`}
+                    >
                       <Autocomplete
                         multiple
                         options={tagData}
                         getOptionLabel={(option) => option.tagName}
-                        isOptionEqualToValue={(option, value) => option.tagName === value.tagName}
+                        isOptionEqualToValue={(option, value) =>
+                          option.tagName === value.tagName
+                        }
                         disableCloseOnSelect
                         value={selectedOptions[fieldKey] || []}
-                        onChange={(_, newValue) => handleAutocompleteChange(fieldKey, newValue)}
+                        onChange={(_, newValue) =>
+                          handleAutocompleteChange(fieldKey, newValue)
+                        }
                         renderInput={(params) => (
                           <TextField
                             {...params}
@@ -185,7 +211,12 @@ const AddStagRequest = () => {
                       />
                     </Grid>
                   ) : fieldKey === "platform" ? (
-                    <Grid item xs={12} md={6} key={`${fieldKey}-autoComplete-platform`}>
+                    <Grid
+                      item
+                      xs={12}
+                      md={6}
+                      key={`${fieldKey}-autoComplete-platform`}
+                    >
                       <Controller
                         name={fieldKey}
                         control={control}
@@ -197,7 +228,9 @@ const AddStagRequest = () => {
                             multiple
                             options={["iOS", "Android", "Desktop"]}
                             getOptionLabel={(option) => option}
-                            isOptionEqualToValue={(option, value) => option === value}
+                            isOptionEqualToValue={(option, value) =>
+                              option === value
+                            }
                             disableCloseOnSelect
                             {...field}
                             onChange={(_, value) => field.onChange(value)}
@@ -242,20 +275,11 @@ const AddStagRequest = () => {
                             Upload Attachments
                           </Link>
                           <FileUploadModal
-                            isOpen={modalIsOpen} onRequestClose={closeModal} onDrop={handleDrop}
+                            isOpen={modalIsOpen}
+                            onRequestClose={closeModal}
+                            onDrop={handleDrop}
                           />
                         </Box>
-                      </Grid>
-                      <Grid item xs={12} sx={{ m: 1 }} key={`${fieldKey}-input`}>
-                        <input
-                          type="file"
-                          id="icon-button-file"
-                          name={fieldKey}
-                          multiple
-                          color="primary"
-                          accept="image/*"
-                          onChange={handleFileChange}
-                        />
                       </Grid>
                     </>
                   ) : (
@@ -282,6 +306,28 @@ const AddStagRequest = () => {
                   )}
                 </React.Fragment>
               ))}
+
+              {files.length > 0 && (
+                <Grid item xs={12} md={12}>
+                  <h3 style={{ marginTop: "20px" }}>Selected Files</h3>
+                  <div style={{
+                      maxHeight: "200px", // Set the maximum height you desire
+                      overflowY: "auto", // Enable vertical scrollbar
+                    }}>
+                    {files.map((file, index) => (
+                      <div
+                        key={file.name}
+                        className={classes.fileGridItemStyles}
+                      >
+                        <span>{file.name}</span>
+                        <IconButton onClick={() => removeFile(index)}>
+                          <DeleteIcon color="error" />
+                        </IconButton>
+                      </div>
+                    ))}
+                  </div>
+                </Grid>
+              )}
 
               <Grid item xs={12} sx={{ marginTop: 2 }}>
                 <Button variant="contained" type="submit" color="primary">

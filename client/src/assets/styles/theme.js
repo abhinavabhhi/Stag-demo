@@ -4,7 +4,7 @@ const theme = createTheme({
       MuiAutocomplete: {
         styleOverrides: {
           tag: {
-            backgroundColor: '#33ab9f', // Change this color to your desired color
+            backgroundColor: '#52525b', // Change this color to your desired color
             color: '#fff', // Change this color to the text color you want
             border:'#009688'
           },
@@ -13,9 +13,9 @@ const theme = createTheme({
     },
     palette: {
       primary: {
-        light: '#33ab9f',
-        main: '#009688',
-        dark: '#00695f',
+        light: '#52525b',
+        main: '#27272a',
+        dark: '#52525b',
         contrastText: '#fff',
       },
       // Add other customizations to the palette if needed

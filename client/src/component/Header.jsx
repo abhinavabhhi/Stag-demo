@@ -1,5 +1,5 @@
 import React from "react";
-import { AppBar, Toolbar, Typography, Button } from "@mui/material";
+import { AppBar, Toolbar, Typography } from "@mui/material";
 import { Link } from "react-router-dom";
 import { makeStyles } from "@mui/styles";
 
@@ -17,7 +17,7 @@ const useStyles = makeStyles((theme) => ({
     textDecoration: "none",
   },
   button: {
-    boxShadow: "none", // Remove box-shadow
+    boxShadow: "none",
   },
 }));
 
@@ -27,17 +27,14 @@ const Header = () => {
   return (
     <AppBar position="static" className={classes.appBar}>
       <Toolbar>
-        <Typography variant="h6" className={classes.title} component={Link} to="/">
-          Sephora oneTag
-        </Typography>
-        <Button
+        <Typography
+          variant="h6"
+          className={classes.title}
           component={Link}
           to="/"
-          variant="contained"
-          className={`${classes.link} ${classes.button}`}
         >
-          Home
-        </Button>
+          Sephora oneTag
+        </Typography>
       </Toolbar>
     </AppBar>
   );

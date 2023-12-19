@@ -1,12 +1,12 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import AddStagRequest from "./component/AddStagRequest";
-import { Dashboard } from "./component/Dashboard";
-import Header from "./component/Header";
-import { ThemeProvider } from "@mui/material/styles";
 import "./styles/modal.css";
+import "./styles/loadingSpinner.css";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 import theme from "./assets/styles/theme";
-import FileUploadModal from "./component/FileUploadModal";
-import EditStagRequest from "./component/EditStagRequest";
+import Header from "./component/Header";
+import WrapperContainer from "./component/WrapperContainer";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@mui/material/styles";
 
 function App() {
   return (
@@ -15,10 +15,7 @@ function App() {
         <BrowserRouter>
           <Header />
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/modal" element={<FileUploadModal />} />
-            <Route path="/add" element={<AddStagRequest />} />
-            <Route path="/update/:id" element={<EditStagRequest />} />
+            <Route path="/" element={<WrapperContainer />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

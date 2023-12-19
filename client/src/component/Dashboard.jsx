@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import DashboardTable from "./DashboardTable";
-import { Link } from "react-router-dom";
-import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import DashboardTable from "./DashboardTable";
 import { getAllStagRequests } from "../features/apiCalls";
 import { makeStyles } from "@mui/styles";
+import { Link } from "react-router-dom";
 
 const useStyles = makeStyles((theme) => ({
   linkButton: {
@@ -40,13 +40,13 @@ export const Dashboard = () => {
     fetchData(setApiData);
   }, []);
 
-  const refreshData = (status,id) => {
-    if(status) {
-      console.log("status", status, id);
+  const refreshData = (status, id) => {
+    if (status) {
       setApiData(
         apiData.filter((val) => {
           return val.id !== id;
-        }));
+        })
+      );
     }
   };
 
@@ -69,4 +69,3 @@ export const Dashboard = () => {
     </div>
   );
 };
-
