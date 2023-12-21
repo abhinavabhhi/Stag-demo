@@ -18,8 +18,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import Link from "@mui/material/Link";
 import { v4 as uuidv4 } from "uuid";
-import IconButton from "@mui/material/IconButton";
-import DeleteIcon from "@mui/icons-material/Delete";
+import FilesThumbnails from "./FilesThumbnails";
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -32,54 +31,50 @@ const useStyles = makeStyles((theme) => ({
   card: {
     padding: theme.spacing(3),
   },
-  fileGridItemStyles: {
-    backgroundColor: "#f0f0f0",
-    padding: "10px",
-    borderRadius: "4px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "10px",
-    width: "auto",
-  },
 }));
 
 const AddStagRequest = ({ onClose, onDataRefresh }) => {
   const classes = useStyles();
   const { control, handleSubmit, register } = useForm();
-  const [formData, setFormData] = useState(
-    fieldNames.reduce((acc, { fieldKey }) => ({ ...acc, [fieldKey]: "" }), {})
-  );
-  const [selectedOptions, setSelectedOptions] = useState({
-    sotProperties: [],
-    platform: [],
+  const [state, setState] = useState({
+    formData: fieldNames.reduce(
+      (acc, { fieldKey }) => ({ ...acc, [fieldKey]: "" }),
+      {}
+    ),
+    selectedOptions: {
+      sotProperties: [],
+      platform: [],
+    },
+    files: [],
+    modalIsOpen: false,
   });
-  const [files, setFiles] = useState([]);
-  const [modalIsOpen, setModalIsOpen] = useState(false);
 
   const openModal = () => {
-    setModalIsOpen(true);
+    setState((prevState) => ({ ...prevState, modalIsOpen: true }));
   };
 
   const closeModal = () => {
-    setModalIsOpen(false);
+    setState((prevState) => ({ ...prevState, modalIsOpen: false }));
   };
 
   const handleDrop = (acceptedFiles) => {
     if (acceptedFiles && acceptedFiles.length > 0) {
-      setFiles(acceptedFiles);
+      setState((prevState) => ({ ...prevState, files: acceptedFiles }));
     }
   };
-  
+
   const handleAutocompleteChange = (fieldKey, selectedValues) => {
-    setSelectedOptions((prevOptions) => ({
-      ...prevOptions,
-      [fieldKey]: selectedValues,
+    setState((prevState) => ({
+      ...prevState,
+      selectedOptions: {
+        ...prevState.selectedOptions,
+        [fieldKey]: selectedValues,
+      },
     }));
   };
 
   const onSubmit = async (data) => {
-    const sotVariables = selectedOptions.sotProperties.reduce(
+    const sotVariables = state.selectedOptions.sotProperties.reduce(
       (acc, obj, index) => {
         index = index + 1;
         acc[`sotVar${index}`] = `${obj.tagName} \n (${obj.tagKey})`;
@@ -89,15 +84,15 @@ const AddStagRequest = ({ onClose, onDataRefresh }) => {
     );
 
     const updatedFormData = {
-      ...formData,
-      sotProperties: selectedOptions.sotProperties || [],
+      ...state.formData,
+      sotProperties: state.selectedOptions.sotProperties || [],
       ...sotVariables,
       ...data,
       platform: data.platform.join(","),
-      attachments: files,
+      attachments: state.files,
       requestId: uuidv4(),
     };
-    setFormData(updatedFormData);
+    setState((prevState) => ({ ...prevState, formData: updatedFormData }));
 
     try {
       const isFormValid = validateForm(updatedFormData);
@@ -105,7 +100,6 @@ const AddStagRequest = ({ onClose, onDataRefresh }) => {
         await createStagRequest(updatedFormData);
         onClose();
         onDataRefresh();
-        //navigate("/"); // Redirect to the desired page upon successful submission
       }
     } catch (error) {
       handleAxiosError(error);
@@ -153,10 +147,8 @@ const AddStagRequest = ({ onClose, onDataRefresh }) => {
     }
   };
 
-  const removeFile = (index) => {
-    const updatedFiles = [...files];
-    updatedFiles.splice(index, 1);
-    setFiles(updatedFiles);
+  const updateFiles = (updatedFiles) => {
+    setState((prevState) => ({ ...prevState, files: updatedFiles }));
   };
 
   return (
@@ -184,7 +176,7 @@ const AddStagRequest = ({ onClose, onDataRefresh }) => {
                           option.tagName === value.tagName
                         }
                         disableCloseOnSelect
-                        value={selectedOptions[fieldKey] || []}
+                        value={state.selectedOptions[fieldKey] || []}
                         onChange={(_, newValue) =>
                           handleAutocompleteChange(fieldKey, newValue)
                         }
@@ -275,7 +267,7 @@ const AddStagRequest = ({ onClose, onDataRefresh }) => {
                             Upload Attachments
                           </Link>
                           <FileUploadModal
-                            isOpen={modalIsOpen}
+                            isOpen={state.modalIsOpen}
                             onRequestClose={closeModal}
                             onDrop={handleDrop}
                           />
@@ -296,6 +288,11 @@ const AddStagRequest = ({ onClose, onDataRefresh }) => {
                             label={fieldLabel}
                             variant="outlined"
                             fullWidth
+                            multiline={
+                              fieldKey === "description" ||
+                              fieldKey === "comments"
+                            }
+                            rows={4}
                             error={!!fieldState.error}
                             helperText={fieldState.error?.message}
                             {...register(fieldKey)}
@@ -307,28 +304,13 @@ const AddStagRequest = ({ onClose, onDataRefresh }) => {
                 </React.Fragment>
               ))}
 
-              {files.length > 0 && (
-                <Grid item xs={12} md={12}>
-                  <h3 style={{ marginTop: "20px" }}>Selected Files</h3>
-                  <div style={{
-                      maxHeight: "200px", // Set the maximum height you desire
-                      overflowY: "auto", // Enable vertical scrollbar
-                    }}>
-                    {files.map((file, index) => (
-                      <div
-                        key={file.name}
-                        className={classes.fileGridItemStyles}
-                      >
-                        <span>{file.name}</span>
-                        <IconButton onClick={() => removeFile(index)}>
-                          <DeleteIcon color="error" />
-                        </IconButton>
-                      </div>
-                    ))}
-                  </div>
-                </Grid>
+              {state.files.length > 0 && (
+                <FilesThumbnails
+                  label="Uploaded Files"
+                  initialData={state.files}
+                  onUpdateFiles={updateFiles}
+                />
               )}
-
               <Grid item xs={12} sx={{ marginTop: 2 }}>
                 <Button variant="contained" type="submit" color="primary">
                   Submit

@@ -30,7 +30,7 @@ const useStyles = makeStyles((theme) => ({
 const ModalContainer = ({ isOpen, onClose, children }) => {
   const classes = useStyles();
   return (
-    <Modal open={isOpen} onClose={onClose}>
+    <Modal open={isOpen} onClose={onClose} disableBackdropClick>
       <div className={classes.modal}>
         <CloseIcon className={classes.closeButton} onClick={onClose} />
         {children}

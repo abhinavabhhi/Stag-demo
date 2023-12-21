@@ -27,22 +27,30 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const initialModalState = {
+  isOpen: false,
+  content: null,
+};
+
+const initialApiState = {
+  data: [],
+  loading: true,
+};
+
 const WrapperContainer = () => {
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [modalContent, setModalContent] = useState(null);
+  const [modal, setModal] = useState(initialModalState);
+  const [api, setApi] = useState(initialApiState);
   const classes = useStyles();
-  const [apiData, setApiData] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      setApi((prevApi) => ({ ...prevApi, loading: true }));
       const response = await getAllStagRequests();
-      setApiData(response);
+      setApi((prevApi) => ({ ...prevApi, data: response || [] }));
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
-      setLoading(false);
+      setApi((prevApi) => ({ ...prevApi, loading: false }));
     }
   };
 
@@ -52,22 +60,19 @@ const WrapperContainer = () => {
 
   const refreshData = (status, id) => {
     if (status) {
-      setApiData(
-        apiData.filter((val) => {
-          return val.id !== id;
-        })
-      );
+      setApi((prevApi) => ({
+        ...prevApi,
+        data: prevApi.data.filter((val) => val.id !== id),
+      }));
     }
   };
 
   const openModal = (content) => {
-    setModalContent(content);
-    setModalIsOpen(true);
+    setModal({ isOpen: true, content });
   };
 
   const onCloseModal = () => {
-    setModalContent(null);
-    setModalIsOpen(false);
+    setModal(initialModalState);
   };
 
   return (
@@ -90,11 +95,16 @@ const WrapperContainer = () => {
           </Button>
         </div>
       </Box>
-      <ModalContainer isOpen={modalIsOpen} onClose={onCloseModal}>
-        {modalContent}
+      <ModalContainer isOpen={modal.isOpen} onClose={onCloseModal}>
+        {modal.content}
       </ModalContainer>
-      {loading && <LoadingSpinner />}
-      <DashboardTable onDataRefresh={fetchData} onModalOpen={openModal} data={apiData} onDelete={refreshData} />
+      {api.loading && <LoadingSpinner />}
+      <DashboardTable
+        onDataRefresh={fetchData}
+        onModalOpen={openModal}
+        data={api.data}
+        onDelete={refreshData}
+      />
     </div>
   );
 };

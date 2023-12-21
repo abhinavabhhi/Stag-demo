@@ -1,16 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-const multer = require("multer");
+const routes = require("./routes/index.js");
 const config = require("./config/config.js");
 const corsOptions = config.corsOptions;
-const routes = require("./routes/index.js");
-const db = require("./models/db");
 const PORT = process.env.PORT || 8800;
-
-require("dotenv").config();
-
 const app = express();
-
 const bodyParser = require("body-parser");
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(

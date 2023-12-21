@@ -3,6 +3,8 @@ import { useForm, Controller } from "react-hook-form";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import Link from "@mui/material/Link";
 import MenuItem from "@mui/material/MenuItem";
 import Autocomplete from "@mui/material/Autocomplete";
 import CheckIcon from "@mui/icons-material/Check";
@@ -11,11 +13,10 @@ import fieldNames from "./data/requestFormFields.json";
 import { getStagRequestById, updateStagRequest } from "../features/apiCalls";
 import { makeStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
-import Typography from "@material-ui/core/Typography";
 import { CardContent } from "@mui/material";
-import IconButton from "@mui/material/IconButton";
-import DeleteIcon from "@mui/icons-material/Delete";
-
+import FileUploadModal from "./FileUploadModal";
+import LoadingSpinner from "./LoadingSpinner";
+import FilesThumbnails from "./FilesThumbnails";
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -39,8 +40,49 @@ const useStyles = makeStyles((theme) => ({
     width: "auto",
   },
   inputLabelNoShrink: {
-    transform: "translate(32px, 24px) scale(1)"
-  }
+    transform: "translate(32px, 24px) scale(1)",
+  },
+  thumbnailGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+    gap: "10px",
+    marginTop: "10px",
+  },
+  thumbnailContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    maxWidth: "100%",
+    maxHeight: "100%",
+    overflow: "hidden",
+    borderRadius: "4px",
+    marginBottom: "10px",
+  },
+  thumbnailStyles: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "flex",
+    alignItems: "center",
+  },
+  deleteIcon: {
+    margin: "5px",
+    color: theme.palette.error.main,
+    cursor: "pointer",
+    backgroundColor: "#fff",
+  },
+  thumbnailWrapper: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    height: "50%",
+    cursor: "pointer",
+  },
+  fileIcon: {
+    fontSize: 48,
+    color: theme.palette.primary.main,
+  },
 }));
 
 const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
@@ -51,14 +93,17 @@ const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
     platform: [],
   });
   const [files, setFiles] = useState([]);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const setValuesAsync = async () => {
       try {
+        setLoading(true);
         const { data } = await getStagRequestById(id);
         const firstElement = data || {};
         for (const [fieldKey, fieldValue] of Object.entries(firstElement)) {
-          await setValue(fieldKey, fieldValue);
+          await setValue(fieldKey, fieldValue || '');
         }
         const sotProperties = firstElement?.sotProperties || [];
         const platformArray = firstElement?.platform
@@ -71,7 +116,9 @@ const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
           sotProperties: JSON.parse(sotProperties),
           platform: platformArray,
         });
+        setLoading(false);
       } catch (error) {
+        setLoading(false);
         console.error("Error fetching data:", error);
       }
     };
@@ -85,6 +132,21 @@ const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
       [fieldKey]: selectedValues,
     }));
   };
+
+  const openModal = () => {
+    setModalIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+  };
+
+  const handleDrop = (acceptedFiles) => {
+    if (acceptedFiles && acceptedFiles.length > 0) {
+      setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
+    }
+  };
+
   const onSubmit = async (data) => {
     const sotVariables = selectedOptions.sotProperties.reduce(
       (acc, obj, index) => {
@@ -117,18 +179,10 @@ const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
     }
   };
 
-  const removeFile = (index) => {
-    const updatedFiles = [...files];
-    updatedFiles.splice(index, 1);
-    setFiles(updatedFiles);
-  };
-
   return (
     <div className={classes.container}>
       <Card className={classes.card}>
-        <Typography variant="h6" component="div">
-          Edit Stag Request Form:
-        </Typography>
+        <h3>Edit Stag Request Form:</h3>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent>
             <Grid container spacing={2}>
@@ -144,10 +198,15 @@ const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
                           label={fieldLabel}
                           variant="outlined"
                           fullWidth
+                          multiline={
+                            fieldKey === "description" ||
+                            fieldKey === "comments"
+                          }
+                          rows={4}
                           {...register(fieldKey)}
                           InputLabelProps={{
                             shrink: true,
-                            className: classes.inputLabelNoShrink
+                            className: classes.inputLabelNoShrink,
                           }}
                         />
                       )}
@@ -223,31 +282,27 @@ const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
                   )}
                 />
               </Grid>
-
-              {files.length > 0 && (
-                <Grid item xs={12} md={12}>
-                  <h3 style={{ marginTop: "20px" }}>Selected Files</h3>
-                  <div
-                    style={{
-                      maxHeight: "200px", // Set the maximum height you desire
-                      overflowY: "auto", // Enable vertical scrollbar
+              <Grid item xs={12} key={`attachments-link`}>
+                <Box>
+                  <Link
+                    component="button"
+                    variant="body2"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      openModal();
                     }}
                   >
-                    {files.map((file, index) => (
-                      <div
-                        key={file.name}
-                        className={classes.fileGridItemStyles}
-                      >
-                        <span>{file.name}</span>
-                        <IconButton onClick={() => removeFile(index)}>
-                          <DeleteIcon color="error" />
-                        </IconButton>
-                      </div>
-                    ))}
-                  </div>
-                </Grid>
-              )}
-
+                    Upload Attachments
+                  </Link>
+                  <FileUploadModal
+                    isOpen={modalIsOpen}
+                    onRequestClose={closeModal}
+                    onDrop={handleDrop}
+                  />
+                </Box>
+              </Grid>
+              
+              {files.length > 0 && <FilesThumbnails label="selected Files" initialData={files} onUpdateFiles={setFiles}/>}
               <Grid item xs={12}>
                 <Button variant="contained" type="submit" color="primary">
                   Update Request
@@ -257,6 +312,7 @@ const EditStagRequest = ({ id, onDataRefresh, onClose }) => {
           </CardContent>
         </form>
       </Card>
+      {loading && <LoadingSpinner />}
     </div>
   );
 };
