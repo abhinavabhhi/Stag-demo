@@ -24,7 +24,7 @@ const useStyles = makeStyles((theme) => ({
     overflow: "hidden",
     borderRadius: "4px",
     marginBottom: "10px",
-    border:"1px solid #d3d3d3"
+    border: "1px solid #d3d3d3",
   },
   thumbnailStyles: {
     width: "100%",
@@ -38,7 +38,7 @@ const useStyles = makeStyles((theme) => ({
     color: theme.palette.error.main,
     cursor: "pointer",
     backgroundColor: "#fff",
-    position: "absolute !important"
+    position: "absolute !important",
   },
   thumbnailWrapper: {
     display: "flex",
@@ -56,39 +56,46 @@ const useStyles = makeStyles((theme) => ({
 
 const FilesThumbnails = ({ label, initialData, onUpdateFiles }) => {
   const classes = useStyles();
-  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
-  const [attachmentsModalOpen, setAttachmentsModalOpen] = useState(false);
-  const [files, setFiles] = useState(initialData);
-
-  useEffect(() => {
-    onUpdateFiles(files);
-  }, [files, onUpdateFiles]);
+  const [state, setState] = useState({
+    selectedImageIndex: null,
+    attachmentsModalOpen: false,
+    files: initialData,
+  });
 
   const handleAttachmentsClick = (attachments, index) => {
     if (attachments && attachments.length > 0) {
-      setSelectedImageIndex(index);
-      setAttachmentsModalOpen(true);
+      setState((prevState) => ({
+        ...prevState,
+        selectedImageIndex: index,
+        attachmentsModalOpen: true,
+      }));
     }
   };
 
   const removeFile = (index) => {
-    const updatedFiles = [...files];
-    updatedFiles.splice(index, 1);
-    setFiles(updatedFiles);
+    setState((prevState) => {
+      const updatedFiles = [...prevState.files];
+      updatedFiles.splice(index, 1);
+      return { ...prevState, files: updatedFiles };
+    });
   };
+
+  useEffect(() => {
+    onUpdateFiles(state.files);
+  }, [state.files, onUpdateFiles]);
 
   return (
     <>
-      {files.length > 0 && (
+      {state.files.length > 0 && (
         <>
           <Grid item xs={12} md={12}>
             <h3 style={{ marginTop: "20px" }}>{label}</h3>
             <div className={classes.thumbnailGrid}>
-              {files.map((file, index) => (
+              {state.files.map((file, index) => (
                 <div key={index} className={classes.thumbnailContainer}>
                   <div
                     className={classes.thumbnailWrapper}
-                    onClick={() => handleAttachmentsClick(files, index)}
+                    onClick={() => handleAttachmentsClick(state.files, index)}
                   >
                     {file.type.startsWith("image/") ? (
                       <img
@@ -113,22 +120,25 @@ const FilesThumbnails = ({ label, initialData, onUpdateFiles }) => {
             </div>
           </Grid>
           <ModalContainer
-            isOpen={attachmentsModalOpen}
+            isOpen={state.attachmentsModalOpen}
             onClose={() => {
-              setAttachmentsModalOpen(false);
-              setSelectedImageIndex(null);
+              setState((prevState) => ({
+                ...prevState,
+                attachmentsModalOpen: false,
+                selectedImageIndex: null,
+              }));
             }}
           >
-            {files.length === 1 ? (
+            {state.files.length === 1 ? (
               <img
-                src={files[0].src}
+                src={state.files[0].src}
                 alt="Attachment"
                 style={{ width: "100%", marginBottom: "16px" }}
               />
             ) : (
               <CarouselSlider
-                attachments={files}
-                selectedIndex={selectedImageIndex}
+                attachments={state.files}
+                selectedIndex={state.selectedImageIndex}
               />
             )}
           </ModalContainer>

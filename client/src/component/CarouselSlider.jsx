@@ -16,7 +16,7 @@ const CarouselSlider = ({attachments, selectedIndex=0}) => {
     return (
       <Slider {...settings} initialSlide={selectedIndex}>
         {attachments.map((attachment, index) => (
-          <div key={index} style={{ textAlign: "center" }}>
+          <div key={index} style={{ width:"70%", textAlign: "center" }}>
             {attachment.type.startsWith("image/") ? (
               <img
                 src={attachment.src}
@@ -30,6 +30,7 @@ const CarouselSlider = ({attachments, selectedIndex=0}) => {
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
+                  width: "100%"
                 }}
               >
                 <FileIcon fontSize="large" />

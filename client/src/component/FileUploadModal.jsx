@@ -1,32 +1,18 @@
 import React, { useState, useCallback } from "react";
-import Dropzone from "react-dropzone";
 import Modal from "react-modal";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloseIcon from "@mui/icons-material/Close";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
+import FileDropzone from "./FileDropzone";
 
 Modal.setAppElement("#root"); // Set the root element for accessibility
 
 const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
   const [files, setFiles] = useState([]);
   const [fileSizeError, setFileSizeError] = useState(false);
-
-  const dropzoneStyles = {
-    width: "100%",
-    height: "100px",
-    border: "2px dashed #ccc",
-    borderRadius: "4px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    outline: "none",
-  };
-
   const modalStyles = {
     overlay: {
       backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay
@@ -115,23 +101,10 @@ const FileUploadModal = ({ isOpen, onRequestClose, onDrop }) => {
       onRequestClose={closeModal}
       contentLabel="File Upload Modal"
       style={modalStyles}
-      disableBackdropClick
     >
       <CloseIcon style={closeButtonStyles} onClick={closeModal} />
       <h2>File Upload</h2>
-      <Dropzone onDrop={handleDrop} maxFiles={5}>
-        {({ getRootProps, getInputProps }) => (
-          <form method="POST" encType="multipart/form-data">
-            <div {...getRootProps()} style={dropzoneStyles}>
-              <input {...getInputProps()} />
-              <CloudUploadIcon
-                style={{ padding: "5px", fontSize: 50, color: "#27272a" }}
-              />
-              <p>Drag 'n' drop some files here, or click to select files</p>
-            </div>
-          </form>
-        )}
-      </Dropzone>
+      <FileDropzone onDrop={handleDrop} fileSizeError={fileSizeError} />
       {fileSizeError && (
         <Typography variant="body2" color="error" style={{ marginTop: "8px" }}>
           File size exceeds 5 MB limit

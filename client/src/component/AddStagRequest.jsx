@@ -8,7 +8,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import CheckIcon from "@mui/icons-material/Check";
 import tagData from "./data/sotProps.json";
 import fieldNames from "./data/requestFormFields.json";
-import { createStagRequest } from "../features/apiCalls";
+import { createStagRequest, createJiraTicket } from "../features/apiCalls";
 import axios from "axios";
 import FileUploadModal from "./FileUploadModal";
 import Card from "@material-ui/core/Card";
@@ -19,6 +19,7 @@ import Typography from "@material-ui/core/Typography";
 import Link from "@mui/material/Link";
 import { v4 as uuidv4 } from "uuid";
 import FilesThumbnails from "./FilesThumbnails";
+import jiraPostRequest from "./data/jiraPostRequest.json";
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -74,36 +75,88 @@ const AddStagRequest = ({ onClose, onDataRefresh }) => {
   };
 
   const onSubmit = async (data) => {
-    const sotVariables = state.selectedOptions.sotProperties.reduce(
-      (acc, obj, index) => {
-        index = index + 1;
-        acc[`sotVar${index}`] = `${obj.tagName} \n (${obj.tagKey})`;
-        return acc;
-      },
-      {}
-    );
-
-    const updatedFormData = {
-      ...state.formData,
-      sotProperties: state.selectedOptions.sotProperties || [],
-      ...sotVariables,
-      ...data,
-      platform: data.platform.join(","),
-      attachments: state.files,
-      requestId: uuidv4(),
-    };
-    setState((prevState) => ({ ...prevState, formData: updatedFormData }));
-
     try {
+      const sotVariables = state.selectedOptions.sotProperties.reduce(
+        (acc, obj, index) => {
+          index = index + 1;
+          acc[`sotVar${index}`] = `${obj.tagName} \n (${obj.tagKey})`;
+          return acc;
+        },
+        {}
+      );
+
+      const updatedFormData = {
+        ...state.formData,
+        sotProperties: state.selectedOptions.sotProperties || [],
+        ...sotVariables,
+        ...data,
+        platform: data.platform.join(","),
+        attachments: state.files,
+        requestId: uuidv4(),
+      };
+
+      setState((prevState) => ({ ...prevState, formData: updatedFormData }));
+
       const isFormValid = validateForm(updatedFormData);
+
       if (isFormValid) {
-        await createStagRequest(updatedFormData);
+        const result = await createStagRequest(updatedFormData);
+        if (result?.affectedRows > 0) {
+          const mappedResponse = {
+            ...jiraPostRequest,
+            "fields": {
+              "summary": updatedFormData?.title,
+              "description": `AC:\r\n # ${
+                updatedFormData?.description
+              } \r\n \r\n # *Platform:* \r\n # ${
+                updatedFormData.platform
+              } \r\n *Required response from UFE:* \r\n {code:java}${formatSotVariables(
+                updatedFormData.sotType,
+                updatedFormData?.sotProperties
+              )} {code} \r\n ${updatedFormData?.comments}`,
+              "project": {
+                "key": "SA",
+                "name": "Sephora Analytics",
+                "projectTypeKey": "software",
+              },
+              "priority": {
+                "self": `https://jira.sephora.com/rest/api/2/priority/7`,
+                "iconUrl":
+                  `https://jira.sephora.com/images/icons/priorities/blocker.svg`,
+                "name": "Not Prioritized",
+                "id": "7",
+              },
+              "issuetype": {
+                "self": "https://jira.sephora.com/rest/api/2/issuetype/10",
+                "id": "10",
+                "description":
+                  "Created by Jira Software - do not edit or delete. Issue type for a user story.",
+                "iconUrl":
+                  `https://jira.sephora.com/secure/viewavatar?size=xsmall&avatarId=15285&avatarType=issuetype`,
+                "name": "Story",
+                "subtask": false,
+                "avatarId": 15285,
+              },
+              "update": {}
+            },
+          };
+          console.log("mappedResponse", mappedResponse);
+          const result = await createJiraTicket(mappedResponse);
+          console.log("result====", result);
+        }
         onClose();
         onDataRefresh();
       }
     } catch (error) {
       handleAxiosError(error);
     }
+  };
+
+  const formatSotVariables = (sotType, sotProperties) => {
+    const formattedSotProperties = sotProperties
+      .map(({ tagKey, tagName }) => `'${tagKey}': '${tagName}'`)
+      .join(",\r\n") || "";
+    return `{ 'sotType': '${sotType}', ${formattedSotProperties} }`;
   };
 
   const validateForm = (formData) => {

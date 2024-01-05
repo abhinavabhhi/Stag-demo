@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { ThemeProvider } from "@material-ui/core/styles";
+import theme from "../assets/styles/theme";
 import {
   Table,
   TableBody,
@@ -11,12 +13,17 @@ import {
   IconButton,
   Box,
   Tooltip,
+  InputBase,
+  AppBar,
+  Toolbar,
+  makeStyles,
 } from "@material-ui/core";
-import { Delete as DeleteIcon, Edit as EditIcon } from "@material-ui/icons";
+import { Delete as DeleteIcon, Edit as EditIcon} from "@material-ui/icons";
 import { deleteRequestById } from "../features/apiCalls";
 import EditStagRequest from "./EditStagRequest";
 import ModalContainer from "./ModalContainer";
 import CarouselSlider from "./CarouselSlider";
+import { Search as SearchIcon } from "@material-ui/icons";
 
 const columnNames = [
   "Title",
@@ -29,6 +36,37 @@ const columnNames = [
   "Attachments",
   "Actions",
 ];
+
+const useStyles = makeStyles((theme) => ({
+  search: {
+    position: "relative",
+    borderRadius: theme.shape.borderRadius,
+    backgroundColor: theme.palette.common.white,
+    "&:hover": {
+      backgroundColor: theme.palette.common.white,
+    },
+    width: "100%",
+  },
+  searchIcon: {
+    padding: theme.spacing(0,0,1,1),
+    height: "100%",
+    position: "absolute",
+    pointerEvents: "none",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color:"#000"
+  },
+  inputRoot: {
+    width: "100%",
+  },
+  inputInput: {
+    padding: theme.spacing(1, 1, 1, 4),
+    transition: theme.transitions.create("width"),
+    width: "100%",
+  },
+}));
+
 
 const StyledTableCell = ({ children }) => (
   <TableCell>
@@ -46,6 +84,7 @@ const initialModalState = {
 };
 
 const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
+   const classes = useStyles();
   const TableHeader = () => {
     return (
       <>
@@ -75,6 +114,8 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
     selectedAttachments: [],
     attachmentsModalOpen: false,
   });
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleDelete = (id) => {
     deleteRequestById(id)
@@ -118,11 +159,13 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
   };
 
   const handleAttachmentsClick = (attachments) => {
-    setState((prevState) => ({
-      ...prevState,
-      selectedAttachments: attachments,
-      attachmentsModalOpen: true,
-    }));
+    if (attachments && attachments.length) {
+      setState((prevState) => ({
+        ...prevState,
+        selectedAttachments: attachments,
+        attachmentsModalOpen: true,
+      }));
+    }
   };
 
   const truncateText = (text, maxLength) => {
@@ -155,8 +198,35 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
     }
   };
 
+  const filteredData = data.filter((item) =>
+    Object.values(item)
+      .join(" ")
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
+
   return (
     <Box width="98%" margin="0 auto">
+    <ThemeProvider theme={theme}>
+       <AppBar position="static">
+        <Toolbar>
+          <div className={classes.search}>
+            <div className={classes.searchIcon}>
+              <SearchIcon />
+            </div>
+            <InputBase
+              placeholder="Search..."
+              classes={{
+                root: classes.inputRoot,
+                input: classes.inputInput,
+              }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </Toolbar>
+      </AppBar>
+      </ThemeProvider>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -165,7 +235,7 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map(
+            {filteredData.map(
               ({
                 id,
                 title,
@@ -218,7 +288,10 @@ const EnhancedTable = ({ data, onDelete, onDataRefresh }) => {
                   </TableCell>
                   <TableCell>
                     <span
-                      style={{ cursor: "pointer", color: "blue" }}
+                      style={{
+                        cursor: attachments.length ? "pointer" : "",
+                        color: "blue",
+                      }}
                       onClick={() => handleAttachmentsClick(attachments)}
                     >
                       {attachments.length

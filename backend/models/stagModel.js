@@ -1,11 +1,11 @@
-const db = require('./db');
-const dbQueries = require('../config/dbQueries');
+const db = require("./db");
+const dbQueries = require("../config/dbQueries");
 const {
   SELECT_ALL_STAG_REQUESTS,
   INSERT_STAG_REQUEST,
   UPDATE_STAG_REQUEST,
   GET_STAG_REQUEST_BY_ID,
-  DELETE_STAG_REQUEST
+  DELETE_STAG_REQUEST,
 } = dbQueries;
 
 const handleModelError = (operation, error) => {
@@ -13,47 +13,39 @@ const handleModelError = (operation, error) => {
   throw error;
 };
 
+const executeQuery = async (modelName, query, params) => {
+  try {
+    const [result] = await db.execute(query, params);
+    return result;
+  } catch (error) {
+    handleModelError(modelName, error);
+  }
+};
+
+// Model function to get all stag requests from the database
 exports.getAllStagRequests = async () => {
-  try {
-    const [rows] = await db.execute(SELECT_ALL_STAG_REQUESTS);
-    return rows;
-  } catch (error) {
-    handleModelError('getAllStagRequests', error);
-  }
+  return executeQuery("getAllStagRequests", SELECT_ALL_STAG_REQUESTS);
 };
 
+// Model function to get a stag request from the database
 exports.getStagRequestById = async (id) => {
-  try {
-    const [result] = await db.execute(GET_STAG_REQUEST_BY_ID, [id]);
-    return result;
-  } catch (error) {
-    handleModelError('getStagRequestById', error);
-  }
+  return executeQuery("getStagRequestById", GET_STAG_REQUEST_BY_ID, [id]);
 };
 
+// Model function to insert a new stag request into the database
 exports.insertStagRequest = async (values) => {
-  try {
-    const [result] = await db.execute(INSERT_STAG_REQUEST, values);
-    return result;
-  } catch (error) {
-    handleModelError('insertStagRequest', error);
-  }
+  return executeQuery("insertStagRequest", INSERT_STAG_REQUEST, values);
 };
 
+// Model function to update a stag request in the database
 exports.updateStagRequest = async (values, id) => {
-  try {
-    const [result] = await db.execute(UPDATE_STAG_REQUEST, [...values, id]);
-    return result;
-  } catch (error) {
-    handleModelError('updateStagRequest', error);
-  }
+  return executeQuery("updateStagRequest", UPDATE_STAG_REQUEST, [
+    ...values,
+    id,
+  ]);
 };
 
+// Model function to delete a stag request from the database
 exports.deleteStagRequest = async (id) => {
-  try {
-    const [result] = await db.execute(DELETE_STAG_REQUEST, [id]);
-    return result;
-  } catch (error) {
-    handleModelError('deleteStagRequest', error);
-  }
+  return executeQuery("deleteStagRequest", DELETE_STAG_REQUEST, [id]);
 };

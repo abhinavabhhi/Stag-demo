@@ -14,20 +14,15 @@ exports.getAllStagRequests = async (req, res) => {
   handleRequest(stagService.getAllStagRequests, req, res);
 };
 
-exports.getStagRequestById = (req, res) => {
+exports.getStagRequestById = async (req, res) => {
   const { id } = req.params;
-  stagService.getStagRequestById(id)
-    .then((result) => {
-      res.send({
-        success: true,
-        data: result && result.length ? result[0] : [],
-        message: "Request retrieved successfully",
-      });
-    })
-    .catch((error) => {
-      console.error('Error view stag request:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
-    });
+  try {
+    const result = await stagService.getStagRequestById(id);
+    res.send({success: true, data: result && result.length ? result[0] : [], message: "Request retrieved successfully"});
+  } catch (error) {
+    console.error("Error view stag request:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
 
 exports.createStagRequest = async (req, res) => {
@@ -41,9 +36,8 @@ exports.updateStagRequest = async (req, res) => {
 exports.deleteStagRequest = async (req, res) => {
   const { id } = req.params;
   try {
-    await stagService.deleteStagRequest(id).then((result) => {
-      res.json({ success: true, message: `${result.affectedRows} Stag request deleted successfully` });
-    });
+    const result = await stagService.deleteStagRequest(id);
+    res.json({ success: true, message: `${result?.affectedRows} Stag request deleted successfully` });
   } catch (error) {
     console.error('Error deleting stag request:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
